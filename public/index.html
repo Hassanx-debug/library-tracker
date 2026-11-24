@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Book Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+  <nav class="navbar navbar-dark bg-primary mb-4">
+    <div class="container">
+      <span class="navbar-brand mb-0 h1">Library Book Tracker</span>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card p-4 mb-4 shadow-sm">
+      <h4>Add New Book</h4>
+      <form id="bookForm" class="row g-3">
+        <div class="col-md-3">
+          <input type="text" id="title" class="form-control" placeholder="Book Title">
+        </div>
+        <div class="col-md-3">
+          <input type="text" id="author" class="form-control" placeholder="Author">
+        </div>
+        <div class="col-md-3">
+          <select id="category" class="form-select">
+            <option value="">Select Category</option>
+            <option value="Fiction">Fiction</option>
+            <option value="Science">Science</option>
+            <option value="History">History</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <input type="number" id="year" class="form-control" placeholder="Year">
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-success w-100">Add</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="mb-3 d-flex align-items-center gap-2">
+      <label class="fw-bold">Filter by Category:</label>
+      <select id="filterCategory" class="form-select w-auto">
+        <option value="All">All</option>
+        <option value="Fiction">Fiction</option>
+        <option value="Science">Science</option>
+        <option value="History">History</option>
+      </select>
+    </div>
+
+    <table class="table table-bordered table-striped bg-white">
+      <thead class="table-dark">
+        <tr>
+          <th>Title</th>
+          <th>Author</th>
+          <th>Category</th>
+          <th>Year</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="bookList"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000/books';
+    let allBooks = [];
+
+    const loadBooks = async () => {
+      const res = await fetch(API_URL);
+      allBooks = await res.json();
+      renderBooks(allBooks);
+    };
+
+    const renderBooks = (books) => {
+      const list = document.getElementById('bookList');
+      list.innerHTML = books.map(book => `
+        <tr>
+          <td>${book.title}</td>
+          <td>${book.author}</td>
+          <td>${book.category}</td>
+          <td>${book.year}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="deleteBook('${book.id}')">Delete</button></td>
+        </tr>
+      `).join('');
+    };
+
+    document.getElementById('bookForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value.trim();
+      const author = document.getElementById('author').value.trim();
+      const category = document.getElementById('category').value;
+      const year = document.getElementById('year').value.trim();
+
+      if (!title || !author || !category || !year) {
+        alert('All fields are required!');
+        return;
+      }
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, author, category, year })
+      });
+
+      e.target.reset();
+      loadBooks();
+    });
+
+    const deleteBook = async (id) => {
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      loadBooks();
+    };
+
+    document.getElementById('filterCategory').addEventListener('change', (e) => {
+      const selected = e.target.value;
+      const filtered = selected === 'All' 
+        ? allBooks 
+        : allBooks.filter(book => book.category === selected);
+      renderBooks(filtered);
+    });
+
+    loadBooks();
+  </script>
+</body>
+</html>
